@@ -57,6 +57,45 @@ export default class Main extends Component {
     }
   };
 
+  handleRefresh = async (repo) => {
+    const string = localStorage.getItem('storageRepositories');
+    try {
+      // Array in localStorage
+      const listRepo = JSON.parse(string);
+      // Find index of object in array to update
+      const index = listRepo.findIndex(item => item.id === repo.id);
+      // Create new object
+      const listRepoNew = [...listRepo];
+      // get update data in repository api
+      const { data: repository } = await api.get(`/repos/${repo.full_name}`);
+      // convert data pushed to last commit
+      repository.lastCommit = moment(repository.pushed_at).fromNow();
+      // update new object in array
+      listRepoNew[index] = repository;
+      // set array in state and local storage
+      this.setState({
+        repositories: listRepoNew,
+      });
+      localStorage.setItem('storageRepositories', JSON.stringify(listRepoNew));
+    } catch (e) {
+      localStorage.setItem('storageRepositories', '');
+    }
+  };
+
+  handleRemove = (repo) => {
+    const string = localStorage.getItem('storageRepositories');
+    try {
+      const listRepo = JSON.parse(string);
+      const listRepoNew = listRepo.filter(item => item.id !== repo.id);
+      this.setState({
+        repositories: listRepoNew,
+      });
+      localStorage.setItem('storageRepositories', JSON.stringify(listRepoNew));
+    } catch (e) {
+      localStorage.setItem('storageRepositories', '');
+    }
+  };
+
   render() {
     const {
       repositories, repositoryInput, repositoryError, loading,
@@ -76,7 +115,11 @@ export default class Main extends Component {
           <button type="submit">{loading ? <i className="fa fa-spinner fa-pulse" /> : 'OK'}</button>
         </Form>
 
-        <CompareList repositories={repositories} />
+        <CompareList
+          repositories={repositories}
+          handleRefresh={this.handleRefresh}
+          handleRemove={this.handleRemove}
+        />
       </Container>
     );
   }
